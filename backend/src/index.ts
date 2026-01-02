@@ -12,6 +12,7 @@ import answerRoutes from './routes/answerRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
@@ -20,9 +21,10 @@ const port = process.env.PORT ? Number(process.env.PORT) : 5000;
 
 app.use(cors());
 app.use(express.json());
-// Serve uploaded files
-const uploadRoot = path.resolve(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadRoot)) fs.mkdirSync(uploadRoot);
+// Serve uploaded files (use existing folder only, resolved relative to this file)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadRoot = path.resolve(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadRoot));
 
 // Create HTTP server and Socket.io server
@@ -220,6 +222,10 @@ async function ensureSchema() {
       await pool.query(`ALTER TABLE rooms ADD COLUMN published_at TIMESTAMP NULL DEFAULT NULL`);
       console.log('Migrated rooms: added published_at timestamp');
     }
+    if (!rNames.has('cover_photo_url')) {
+      await pool.query(`ALTER TABLE rooms ADD COLUMN cover_photo_url VARCHAR(512) NULL`);
+      console.log('Migrated rooms: added cover_photo_url');
+    }
     await pool.query(`UPDATE rooms SET is_published = 1, published_at = COALESCE(published_at, NOW()) WHERE is_public = 1 AND LOWER(status) = 'published' AND is_published = 0`);
 
     // Users table migrations for Discord OAuth
@@ -319,7 +325,7 @@ setInterval(() => {
 async function broadcastRoomsSnapshot() {
   try {
     const [rows] = await pool.query<any[]>(
-      `SELECT r.id, r.title, r.is_public, r.status, r.start_time, r.time_per_question,
+      `SELECT r.id, r.title, r.is_public, r.status, r.start_time, r.time_per_question, r.cover_photo_url,
               (SELECT COUNT(*) FROM questions q WHERE q.room_id = r.id) AS total_questions,
               (SELECT COUNT(*) FROM participants p WHERE p.room_id = r.id) AS participant_count,
               COALESCE(r.is_published, 0) AS is_published
@@ -356,6 +362,7 @@ async function broadcastRoomsSnapshot() {
         title: r.title,
         isPublic: !!r.is_public,
         participantCount: Number(r.participant_count) || 0,
+        coverPhotoUrl: r.cover_photo_url || null,
         status: state,
         countdown,
       };
@@ -371,19 +378,20 @@ setInterval(broadcastRoomsSnapshot, 3000);
 async function broadcastGlobalLeaderboard() {
   try {
     const [rows] = await pool.query<any[]>(
-      `SELECT u.id AS user_id, u.username,
+      `SELECT u.id AS user_id, u.username, u.avatar_url,
               COALESCE(SUM(a.score),0) AS total_score,
               COALESCE(SUM(a.is_correct),0) AS correct,
               COUNT(*) AS answered,
               COUNT(DISTINCT a.room_id) AS rooms
        FROM answers a
        JOIN users u ON u.id = a.user_id
-       GROUP BY u.id, u.username
+       GROUP BY u.id, u.username, u.avatar_url
        ORDER BY total_score DESC, correct DESC, answered DESC, u.username ASC`
     );
     const payload = rows.map((r: any, idx: number) => ({
       userId: r.user_id,
       username: r.username,
+      avatarUrl: r.avatar_url || '',
       score: Number(r.total_score) || 0,
       correct: Number(r.correct) || 0,
       answered: Number(r.answered) || 0,

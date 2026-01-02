@@ -30,6 +30,9 @@ const EditRoom: React.FC = () => {
   const [timePerQuestion, setTimePerQuestion] = useState(30);
   const [isPublic, setIsPublic] = useState(true);
   const [startTime, setStartTime] = useState('');
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
   
   // Questions State
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -52,7 +55,7 @@ const EditRoom: React.FC = () => {
 
   const fetchRoomDetails = async () => {
     try {
-      const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -61,6 +64,7 @@ const EditRoom: React.FC = () => {
         setMaxParticipants(data.room.max_participants);
         setTimePerQuestion(data.room.time_per_question);
         setIsPublic(!!data.room.is_public);
+        if (data.room.cover_photo_url) setCoverUrl(data.room.cover_photo_url);
         if (data.room.start_time) {
           const localInput = data.room.start_time.replace(' ', 'T').slice(0, 16);
           setStartTime(localInput);
@@ -74,7 +78,7 @@ const EditRoom: React.FC = () => {
 
   const fetchQuestions = async () => {
     try {
-      const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/questions/room/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/questions/room/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -88,7 +92,19 @@ const EditRoom: React.FC = () => {
 
   const handleUpdateRoom = async () => {
     try {
-      const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms/${id}`, {
+      let newCoverUrl = coverUrl || null;
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append('image', coverFile);
+        const up = await fetch(`http://localhost:5000/api/upload/room-cover`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: fd,
+        });
+        const upJson = await up.json();
+        if (upJson?.success && upJson?.url) newCoverUrl = upJson.url;
+      }
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -99,7 +115,8 @@ const EditRoom: React.FC = () => {
           maxParticipants, 
           timePerQuestion, 
           isPublic,
-          startTime: startTime ? `${startTime}:00`.replace('T', ' ') : null
+          startTime: startTime ? `${startTime}:00`.replace('T', ' ') : null,
+          coverPhotoUrl: newCoverUrl
         })
       });
       const data = await res.json();
@@ -113,7 +130,7 @@ const EditRoom: React.FC = () => {
 
   const handleDeleteRoom = async () => {
     try {
-      const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -141,7 +158,7 @@ const EditRoom: React.FC = () => {
       if (newImageFile) {
         const form = new FormData();
         form.append('image', newImageFile);
-        const upRes = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/upload/question-image`, {
+        const upRes = await fetch(`http://localhost:5000/api/upload/question-image`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: form
@@ -152,7 +169,7 @@ const EditRoom: React.FC = () => {
         }
       }
 
-      const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/questions/room/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/questions/room/${id}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -182,7 +199,7 @@ const EditRoom: React.FC = () => {
 
   const handleDeleteQuestion = async (qId: number) => {
     try {
-      const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/questions/${qId}`, {
+      const res = await fetch(`http://localhost:5000/api/questions/${qId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -223,6 +240,30 @@ const EditRoom: React.FC = () => {
             <IonItem>
               <IonLabel position="stacked">Title</IonLabel>
               <IonInput value={title} onIonChange={e => setTitle(e.detail.value!)} />
+            </IonItem>
+            <IonItem>
+              <IonLabel position="stacked">Cover Photo (optional)</IonLabel>
+              <input 
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null;
+                  setCoverFile(f);
+                  setCoverPreview(f ? URL.createObjectURL(f) : null);
+                }}
+              />
+              {(coverPreview || coverUrl) && (
+                <div style={{ marginTop: 8 }}>
+                  <img 
+                    src={coverPreview ? coverPreview : (coverUrl?.startsWith('/uploads') ? `http://localhost:5000${coverUrl}` : coverUrl || '')}
+                    alt="cover"
+                    style={{ maxWidth: '100%', borderRadius: 8 }}
+                  />
+                </div>
+              )}
+              {coverUrl && (
+                <IonButton size="small" fill="clear" onClick={() => { setCoverUrl(null); setCoverPreview(null); setCoverFile(null); }}>Remove</IonButton>
+              )}
             </IonItem>
             <IonItem>
               <IonLabel position="stacked">Max Participants</IonLabel>
@@ -279,7 +320,7 @@ const EditRoom: React.FC = () => {
                 color="success"
                 onClick={async () => {
                   try {
-                    const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms/publish/${id}`, {
+                    const res = await fetch(`http://localhost:5000/api/rooms/publish/${id}`, {
                       method: 'POST',
                       headers: { 
                         'Content-Type': 'application/json',
@@ -308,7 +349,7 @@ const EditRoom: React.FC = () => {
                         <img
                           src={(() => {
                             const raw = (q as any).image_url || (q as any).imageUrl;
-                            return typeof raw === 'string' && raw.startsWith('/uploads') ? `https://preprimary-chau-unmelodised.ngrok-free.dev${raw}` : raw;
+                            return typeof raw === 'string' && raw.startsWith('/uploads') ? `http://localhost:5000${raw}` : raw;
                           })()}
                           alt="Question"
                           className="mb-3 max-h-48 object-contain border rounded"

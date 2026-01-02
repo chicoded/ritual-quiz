@@ -3,8 +3,27 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
 import { type RowDataPacket, type ResultSetHeader } from 'mysql2';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function pickRandomSiggyAvatar(): string | null {
+  try {
+    const dir = path.resolve(__dirname,'../uploads', 'siggy');
+    if (!fs.existsSync(dir)) return null;
+    const files = fs.readdirSync(dir).filter(f => /\.(png|jpe?g|webp|gif)$/i.test(f));
+    if (files.length === 0) return null;
+    const chosen = files[Math.floor(Math.random() * files.length)];
+    return `/uploads/siggy/${chosen}`;
+  } catch {
+    return null;
+  }
+}
 
 export const register = async (req: Request, res: Response) => {
   const { username, email, password, role } = req.body;
@@ -29,7 +48,7 @@ if(req.method === "GET"){
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const defaultAvatar = `https://avatar.iran.liara.run/public?seed=${encodeURIComponent(username)}-${Date.now()}`;
+    const defaultAvatar = pickRandomSiggyAvatar();
     // Insert user
     const [result] = await pool.query<ResultSetHeader>(
       'INSERT INTO users (username, email, password_hash, role, avatar_url) VALUES (?, ?, ?, ?, ?)',
@@ -41,7 +60,7 @@ if(req.method === "GET"){
     res.status(201).json({
       success: true,
       token,
-      user: { id: result.insertId, username, email, role: role || 'participant' }
+      user: { id: result.insertId, username, email, role: role || 'participant', avatar_url: defaultAvatar || '' }
     });
 
   } catch (error: any) {
@@ -78,12 +97,39 @@ export const login = async (req: Request, res: Response) => {
       return;
     }
 
+    // Assign random avatar from siggy if missing or invalid
+    let currentAvatar = user['avatar_url'] ? String(user['avatar_url']) : '';
+    const needsAvatar = !currentAvatar || /^(?!https?:\/\/)(?!\/uploads\/)/i.test(currentAvatar);
+    if (needsAvatar) {
+      const chosen = pickRandomSiggyAvatar();
+      if (chosen) {
+        await pool.query('UPDATE users SET avatar_url = ? WHERE id = ?', [chosen, user['id']]);
+        currentAvatar = chosen;
+        user['avatar_url'] = chosen;
+      }
+    } else if (currentAvatar && currentAvatar.startsWith('/uploads/')) {
+      // If it's an uploads path, ensure file exists; otherwise pick a random
+      try {
+        const rel = currentAvatar.replace(/^\/uploads\//, '');
+        const fsPath = path.resolve(__dirname, '../uploads', rel);
+        if (!fs.existsSync(fsPath)) {
+          const chosen = pickRandomSiggyAvatar();
+          if (chosen) {
+            await pool.query('UPDATE users SET avatar_url = ? WHERE id = ?', [chosen, user['id']]);
+            currentAvatar = chosen;
+            user['avatar_url'] = chosen;
+          }
+        }
+      } catch {}
+    }
+
     const token = jwt.sign({ id: user['id'], username: user['username'], role: user['role'] }, JWT_SECRET, { expiresIn: '24h' });
+    const publicAvatarLogin = String(currentAvatar || '');
 
     res.json({
       success: true,
       token,
-      user: { id: user['id'], username: user['username'], email: user['email'], role: user['role'], avatar_url: user['avatar_url'] }
+      user: { id: user['id'], username: user['username'], email: user['email'], role: user['role'], avatar_url: publicAvatarLogin }
     });
 
   } catch (error: any) {

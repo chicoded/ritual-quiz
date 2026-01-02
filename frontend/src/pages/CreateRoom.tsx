@@ -17,6 +17,8 @@ const CreateRoom: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
   
   const { token } = useAuth();
   const history = useHistory();
@@ -35,7 +37,21 @@ const CreateRoom: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms/create', {
+      let coverPhotoUrl: string | undefined = undefined;
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append('image', coverFile);
+        const uploadRes = await fetch('http://localhost:5000/api/upload/room-cover', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: fd,
+        });
+        const uploadJson = await uploadRes.json();
+        if (uploadJson?.success && uploadJson?.url) {
+          coverPhotoUrl = uploadJson.url;
+        }
+      }
+      const response = await fetch('http://localhost:5000/api/rooms/create', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -46,7 +62,8 @@ const CreateRoom: React.FC = () => {
           maxParticipants, 
           timePerQuestion, 
           isPublic, 
-          password: isPublic ? undefined : password
+          password: isPublic ? undefined : password,
+          coverPhotoUrl
         }),
       });
       const data = await response.json();
@@ -90,6 +107,25 @@ const CreateRoom: React.FC = () => {
             placeholder="e.g. Friday Night Trivia"
             onIonChange={e => setTitle(e.detail.value!)} 
           />
+        </IonItem>
+
+        <IonItem>
+          <IonLabel position="stacked">Cover Photo (optional)</IonLabel>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0] || null;
+              setCoverFile(f);
+              setCoverPreview(f ? URL.createObjectURL(f) : null);
+            }}
+            style={{ color: '#fff' }}
+          />
+          {coverPreview && (
+            <div style={{ marginTop: 8 }}>
+              <img src={coverPreview} alt="preview" style={{ maxWidth: '100%', borderRadius: 8 }} />
+            </div>
+          )}
         </IonItem>
 
         <IonItem>

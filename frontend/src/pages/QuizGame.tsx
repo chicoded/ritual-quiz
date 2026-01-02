@@ -34,7 +34,7 @@ const QuizGame: React.FC = () => {
 
   useEffect(() => {
     // Initialize Socket
-    const newSocket = io('https://preprimary-chau-unmelodised.ngrok-free.dev');
+    const newSocket = io('http://localhost:5000');
     setSocket(newSocket);
 
     newSocket.emit('join_game', { roomId: id, userId: user?.id });
@@ -114,7 +114,7 @@ const QuizGame: React.FC = () => {
                           <img
                             src={(() => {
                               const raw = (question as any).image_url || (question as any).imageUrl;
-                              return typeof raw === 'string' && raw.startsWith('/uploads') ? `https://preprimary-chau-unmelodised.ngrok-free.dev${raw}` : raw;
+                              return typeof raw === 'string' && raw.startsWith('/uploads') ? `http://localhost:5000${raw}` : raw;
                             })()}
                             alt="Question"
                             className="mb-3 max-h-60 object-contain border rounded"
@@ -152,7 +152,7 @@ const QuizGame: React.FC = () => {
                                   setSelectedOptionIndex(i);
                                   localStorage.setItem(`quiz_progress_${id}_${currentQuestionIndex}`, String(i));
                                   try {
-                                    fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/answers/submit`, {
+                                    fetch(`http://localhost:5000/api/answers/submit`, {
                                       method: 'POST',
                                       headers: {
                                         'Content-Type': 'application/json',

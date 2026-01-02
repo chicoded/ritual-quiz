@@ -9,9 +9,11 @@ const router = express.Router();
 const uploadRoot = path.resolve(process.cwd(), 'uploads');
 const questionDir = path.join(uploadRoot, 'questions');
 const avatarDir = path.join(uploadRoot, 'avatars');
-if (!fs.existsSync(uploadRoot)) fs.mkdirSync(uploadRoot);
-if (!fs.existsSync(questionDir)) fs.mkdirSync(questionDir);
-if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir);
+const coverDir = path.join(uploadRoot, 'room_cover');
+try { if (!fs.existsSync(uploadRoot)) fs.mkdirSync(uploadRoot, { recursive: true }); } catch {}
+try { if (!fs.existsSync(questionDir)) fs.mkdirSync(questionDir, { recursive: true }); } catch {}
+try { if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true }); } catch {}
+try { if (!fs.existsSync(coverDir)) fs.mkdirSync(coverDir, { recursive: true }); } catch {}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, questionDir),
@@ -57,6 +59,26 @@ router.post('/avatar-image', authenticateToken, avatarUpload.single('image'), as
       await (await import('../config/db.js')).default.query('UPDATE users SET avatar_url = ? WHERE id = ?', [urlPath, userId]);
     }
   } catch {}
+  res.json({ success: true, url: urlPath });
+});
+
+// Room cover upload
+const coverStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, coverDir),
+  filename: (_req, file, cb) => {
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname || '') || '.png';
+    cb(null, `cover-${unique}${ext}`);
+  }
+});
+const coverUpload = multer({ storage: coverStorage });
+
+router.post('/room-cover', authenticateToken, coverUpload.single('image'), (req, res) => {
+  if (!req.file) {
+    res.status(400).json({ success: false, message: 'No image file uploaded' });
+    return;
+  }
+  const urlPath = `/uploads/rooms_cover/${req.file.filename}`;
   res.json({ success: true, url: urlPath });
 });
 

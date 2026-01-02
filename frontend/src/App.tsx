@@ -12,6 +12,8 @@ import RoomLobby from '@/pages/RoomLobby';
 import QuizGame from '@/pages/QuizGame';
 import GlobalLeaderboard from '@/pages/GlobalLeaderboard';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import FloatingNav from '@/components/FloatingNav';
+import { useLocation } from 'react-router-dom';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -61,8 +63,17 @@ const AppRoutes: React.FC = () => {
       <Route exact path="/">
         <Redirect to="/home" />
       </Route>
+
     </IonRouterOutlet>
   );
+};
+
+const NavHost: React.FC = () => {
+  const location = useLocation();
+  const allowed = ['/home', '/join', '/dashboard', '/leaderboard/global'];
+  const path = location.pathname;
+  const showNav = allowed.some(a => path.startsWith(a));
+  return showNav ? <FloatingNav /> : null;
 };
 
 const App: React.FC = () => (
@@ -70,6 +81,7 @@ const App: React.FC = () => (
     <AuthProvider>
       <IonReactRouter>
         <AppRoutes />
+        <NavHost />
       </IonReactRouter>
     </AuthProvider>
   </IonApp>

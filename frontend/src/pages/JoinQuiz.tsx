@@ -3,7 +3,7 @@ import {
   IonContent, IonHeader, IonPage, IonTitle, IonToolbar, 
   IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent,
   IonButton, IonSearchbar, IonBadge, IonModal, IonItem, IonLabel, IonInput,
-  IonButtons, IonSpinner, IonToast
+  IonButtons, IonSpinner, IonToast, IonSegment, IonSegmentButton
 } from '@ionic/react';
 import { useAuth } from '../context/AuthContext';
 import { io, Socket } from 'socket.io-client';
@@ -48,6 +48,7 @@ interface Room {
   created_at?: string;
   start_time?: string | null;
   participant_count: number;
+  host_id?: number;
   // Live fields from socket snapshot
   isPublic?: boolean;
   countdown?: number | null;
@@ -69,12 +70,12 @@ const JoinQuiz: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [myStatus, setMyStatus] = useState<Record<number, { participated: boolean; completed: boolean }>>({});
 
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const history = useHistory();
 
   useEffect(() => {
     fetchRooms();
-    const s = io('https://preprimary-chau-unmelodised.ngrok-free.dev');
+    const s = io('http://localhost:5000');
     setSocket(s);
     s.emit('subscribe_rooms');
     s.on('rooms_snapshot', (snapshot: any[]) => {
@@ -113,17 +114,20 @@ const JoinQuiz: React.FC = () => {
       setFilteredRooms(rooms);
     } else {
       const lower = searchText.toLowerCase();
-      setFilteredRooms(rooms.filter(r => 
-        r.title.toLowerCase().includes(lower) || 
-        r.room_code.toLowerCase().includes(lower)
-      ));
+      setFilteredRooms(
+        rooms.filter(r => {
+          const title = (r.title || '').toLowerCase();
+          const code = (r.room_code || '').toLowerCase();
+          return title.includes(lower) || code.includes(lower);
+        })
+      );
     }
   }, [searchText, rooms]);
 
   const fetchRooms = async () => {
     try {
       // Fetch public rooms
-      const res = await fetch('https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms', {
+      const res = await fetch('http://localhost:5000/api/rooms', {
         headers: { 'Authorization': `Bearer ${token}` } // Optional if public endpoint doesn't need token, but good practice
       });
       const data = await res.json();
@@ -144,7 +148,7 @@ const JoinQuiz: React.FC = () => {
   const fetchMyStatus = async (roomIds: number[]) => {
     try {
       if (!roomIds || roomIds.length === 0) return;
-      const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/answers/my-status`, {
+      const res = await fetch(`http://localhost:5000/api/answers/my-status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ roomIds })
@@ -159,6 +163,10 @@ const JoinQuiz: React.FC = () => {
   };
 
   const handleJoinClick = async (room: Room) => {
+    if (room.host_id && user && user.id === room.host_id) {
+      setToast({ show: true, message: 'You cannot participate in a room you created' });
+      return;
+    }
     if (room.is_public) {
       if (myStatus[room.id]?.participated) {
         history.push(`/lobby/${room.id}`);
@@ -167,7 +175,7 @@ const JoinQuiz: React.FC = () => {
       // Direct join logic (navigate to lobby)
       setJoining(true);
       try {
-        const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms/join/${room.id}`, {
+        const res = await fetch(`http://localhost:5000/api/rooms/join/${room.id}`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -205,7 +213,7 @@ const JoinQuiz: React.FC = () => {
     
     setJoining(true);
     try {
-      const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms/join/${selectedRoom.id}`, {
+      const res = await fetch(`http://localhost:5000/api/rooms/join/${selectedRoom.id}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -233,94 +241,140 @@ const JoinQuiz: React.FC = () => {
     }
   };
 
+  const styles = {
+    page: { backgroundColor: '#000' },
+    toolbar: { backgroundColor: '#000', color: '#fff', padding: 0 },
+    backBtn: { border: '1px solid rgba(255,255,255,0.2)', color: '#fff', background: 'rgba(66,66,66,0.6)', padding: '6px 12px', borderRadius: 20 },
+    searchVars: {
+      ['--background' as any]: 'rgba(255, 255, 255, 0.51)',
+      ['--color' as any]: '#fff',
+      ['--placeholder-color' as any]: '#ffffffd6',
+      ['--border-radius' as any]: '24px',
+    } as React.CSSProperties,
+    searchInline: { backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.12)' },
+    content: { backgroundColor: '#000', color: '#fff' },
+    container: { padding: 12, color: '#fff' },
+    section: { marginTop: 8 },
+    sectionTitle: { fontSize: 16, fontWeight: 600 as const, marginBottom: 8, color: '#fff' },
+    grid: { display: 'grid', gap: 12, gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+    card: { backgroundColor: '#121212', color: '#fff', border: '1px solid #333' },
+    headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+    subtitle: { fontSize: 12, color: '#9CA3AF' },
+    meta: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
+    glassInputItem: { background: 'rgba(31, 31, 31, 0.1)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderRadius: 12, padding: 8 },
+    glassInputVars: {
+      ['--background' as any]: 'transparent',
+      ['--color' as any]: '#fff',
+      ['--placeholder-color' as any]: '#ffffffc9',
+      ['--padding-start' as any]: '8px',
+      ['--padding-end' as any]: '8px',
+    } as React.CSSProperties,
+  };
+
+  const publicRooms = filteredRooms.filter(r => r.is_public === 1 || r.isPublic);
+  const privateRooms = filteredRooms.filter(r => !(r.is_public === 1 || r.isPublic));
+  const [segment, setSegment] = useState<'public' | 'private'>('public');
+
   return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start"><IonButton routerLink="/home">Back</IonButton></IonButtons>
-          <IonTitle>Join a Quiz</IonTitle>
-        </IonToolbar>
-        <IonToolbar>
-          <IonSearchbar 
-            value={searchText} 
-            onIonChange={e => setSearchText(e.detail.value!)} 
+    <IonPage style={styles.page}>
+
+      <div style={styles.content}>
+                  <IonButtons slot="start">
+            <div style={styles.backBtn} onClick={() => history.push('/home')}>Back</div>
+          </IonButtons>
+          <IonSearchbar
+            value={searchText}
+            onIonInput={(e: any) => setSearchText(e.detail?.value ?? '')}
+            onIonClear={() => setSearchText('')}
             placeholder="Search by title or code"
+            style={{ ...styles.searchVars, ...styles.searchInline }}
           />
-        </IonToolbar>
-      </IonHeader>
-
-      <IonContent className="ion-padding">
+      <div style={styles.container}>
         {loading ? (
-          <div className="flex justify-center mt-10"><IonSpinner /></div>
-        ) : filteredRooms.length === 0 ? (
-          <div className="text-center mt-10 text-gray-500">No active rooms found.</div>
+          <div style={{ textAlign: 'center', marginTop: 24 }}><IonSpinner /></div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredRooms.map(room => (
-              <IonCard key={room.id}>
-                <IonCardHeader>
-                  <div className="flex justify-between items-center">
-                    <IonCardTitle className="text-lg">{room.title}</IonCardTitle>
-                    <IonBadge color={room.is_public ? "success" : "warning"}>
-                      {room.is_public ? "Public" : "Private"}
-                    </IonBadge>
-                  </div>
-                  <IonCardSubtitle>Code: {room.room_code}</IonCardSubtitle>
-                  
-                  {/* Status pill and countdown for private waiting */}
-                  <div className="mt-2 text-sm">
-                    {room.isPublic ? (
-                      <IonBadge color="success">Published</IonBadge>
-                    ) : room.status === 'waiting' ? (
-                      <IonBadge color="warning">Waiting</IonBadge>
-                    ) : room.status === 'started' ? (
-                      <IonBadge color="tertiary">Started</IonBadge>
-                    ) : room.status === 'ended' ? (
-                      <IonBadge color="medium">Ended</IonBadge>
-                    ) : null}
-                    {!room.isPublic && room.status === 'waiting' && room.countdown != null && (
-                      <p className="text-xs text-gray-400 mt-1">Starts in {room.countdown}s</p>
-                    )}
-                  </div>
-
-                  <p className="text-sm text-gray-500 mt-1">
-                    Participants: {room.participant_count} / {room.max_participants}
-                  </p>
-                </IonCardHeader>
-                <IonCardContent>
-                  <IonButton expand="block" onClick={() => handleJoinClick(room)}>
-                    {room.is_public ? (myStatus[room.id]?.participated ? "View Stats" : "Join Now") : "Enter Password"}
-                  </IonButton>
-                </IonCardContent>
-              </IonCard>
-            ))}
-          </div>
+          <>
+            <div style={{ marginBottom: 12 }}>
+              <IonSegment
+                value={segment}
+                onIonChange={(e: any) => setSegment((e.detail?.value as any) || 'public')}
+                style={{
+                  ['--background' as any]: 'rgba(255,255,255,0.06)',
+                  ['--indicator-color' as any]: '#fff',
+                  ['--border-radius' as any]: '20px',
+                  ['--color' as any]: '#fff',
+                  ['--color-checked' as any]: '#22c55e'
+                } as React.CSSProperties}
+              >
+                <IonSegmentButton value="public">
+                  Public
+                </IonSegmentButton>
+                <IonSegmentButton value="private">
+                  Private
+                </IonSegmentButton>
+              </IonSegment>
+            </div>
+            <div style={styles.section}>
+              <div style={styles.sectionTitle}>{segment === 'public' ? 'Public Rooms' : 'Private Rooms'}</div>
+              <div style={styles.grid as React.CSSProperties}>
+                {(segment === 'public' ? publicRooms : privateRooms).map(room => (
+                  <IonCard key={room.id} style={styles.card}>
+                    <IonCardHeader>
+                      <div style={styles.headerRow as React.CSSProperties}>
+                        <IonCardTitle style={{color: '#fff', fontWeight: 700}}>{room.title}</IonCardTitle>
+                        <IonBadge color={segment === 'public' ? 'success' : 'warning'}>{segment === 'public' ? 'Public' : 'Private'}</IonBadge>
+                      </div>
+                      <IonCardSubtitle style={styles.subtitle}>Code: {room.room_code}</IonCardSubtitle>
+                      {segment === 'private' && (
+                        <div style={styles.meta}>
+                          {room.status === 'waiting' ? (
+                            <IonBadge color="warning">Waiting</IonBadge>
+                          ) : room.status === 'started' ? (
+                            <IonBadge color="tertiary">Started</IonBadge>
+                          ) : room.status === 'ended' ? (
+                            <IonBadge color="medium">Ended</IonBadge>
+                          ) : null}
+                          {!room.isPublic && room.status === 'waiting' && room.countdown != null && (
+                            <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>Starts in {room.countdown}s</div>
+                          )}
+                        </div>
+                      )}
+                      <div style={styles.meta}>Participants: {room.participant_count} {room.max_participants ? `/ ${room.max_participants}` : ''}</div>
+                    </IonCardHeader>
+                    <IonCardContent>
+                      <button style={{color: 'white', border: '1px solid white', padding: 4, borderRadius: 4, background: 'green'}} onClick={() => handleJoinClick(room)}>
+                        {segment === 'public' ? (myStatus[room.id]?.participated ? 'View Stats' : 'Join Now') : 'Enter Password'}
+                      </button>
+                    </IonCardContent>
+                  </IonCard>
+                ))}
+                {(segment === 'public' ? publicRooms : privateRooms).length === 0 && (
+                  <div style={styles.subtitle}>No {segment} rooms</div>
+                )}
+              </div>
+            </div>
+          </>
         )}
 
         <IonModal isOpen={showPasswordModal} onDidDismiss={() => setShowPasswordModal(false)} className="auto-height">
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>Enter Password</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowPasswordModal(false)}>Close</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent className="ion-padding">
-            <IonItem>
-              <IonLabel position="stacked">Room Password</IonLabel>
-              <IonInput 
-                type="password" 
-                value={password} 
-                onIonInput={e => setPassword(e.detail.value!)} 
+          <div className="ion-padding" style={{background: "black", height: '100vh'}}>
+                            <IonButton onClick={() => setShowPasswordModal(false)}>Close</IonButton>
+             <div style={{color: "#fff", fontSize: 24, fontWeight: 700, marginBottom: 24, textAlign: 'center'}}>{selectedRoom ? ` ${selectedRoom.title}` : 'Enter Password'}</div>
+            <div style={styles.glassInputItem}>
+              <IonLabel style={{ color: '#fff', fontSize: 20, fontWeight: 600 }}  position="stacked">Room Password</IonLabel>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ width: '100%', background: '#ffffffa7', color: '#fff', padding: 8, border: 'none', outline: 'none', borderRadius: 20, height: 40 }}
               />
-            </IonItem>
-            <div className="mt-4">
-              <IonButton expand="block" onClick={submitPassword} disabled={joining}>
-                {joining ? 'Verifying...' : 'Join Room'}
-              </IonButton>
             </div>
-          </IonContent>
+            <div style={{ textAlign: 'center', marginTop: 12 }}>
+              <button style={{color: 'white', border: '0px solid white', padding: 4, borderRadius: 20, background: 'green', width: '90%', margin: 'auto', height: 40, fontSize: 20}}  onClick={submitPassword} disabled={joining}>
+                {joining ? 'Verifying...' : 'Join Room'}
+              </button>
+            </div>
+          </div>
         </IonModal>
 
         <IonToast 
@@ -329,7 +383,8 @@ const JoinQuiz: React.FC = () => {
           message={toast.message} 
           duration={2000} 
         />
-      </IonContent>
+      </div>
+      </div>
     </IonPage>
   );
 };

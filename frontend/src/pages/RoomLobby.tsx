@@ -8,6 +8,8 @@ import { useParams, useHistory } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { io, Socket } from 'socket.io-client';
 import QuizGame from './QuizGame';
+import LeaderboardPanel from '@/components/lobby/LeaderboardPanel';
+import CountdownDisplay from '@/components/lobby/CountdownDisplay';
 
 interface Participant {
   id: number;
@@ -15,71 +17,7 @@ interface Participant {
   joined_at: string;
 }
 
-// Separate component for Countdown
-const CountdownDisplay = ({ targetDate }: { targetDate: string }) => {
-  const [timeLeft, setTimeLeft] = useState("");
 
-  useEffect(() => {
-    const updateTimer = () => {
-      const difference = +new Date(targetDate) - +new Date();
-      if (difference > 0) {
-        const minutes = Math.floor((difference / 1000 / 60) % 60);
-        const seconds = Math.floor((difference / 1000) % 60);
-        const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-        
-        if (hours > 0) setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
-        else setTimeLeft(`${minutes}m ${seconds}s`);
-      } else {
-        setTimeLeft("Starting...");
-      }
-    };
-    updateTimer();
-    const timer = setInterval(updateTimer, 1000);
-    return () => clearInterval(timer);
-  }, [targetDate]);
-
-  return <p className="text-xl font-bold text-blue-600 mt-2">{timeLeft}</p>;
-};
-
-const Leaderboard = ({ roomId, token }: { roomId: string, token: string | null }) => {
-  const { user } = useAuth();
-  const [rows, setRows] = useState<any[]>([]);
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/answers/leaderboard/${roomId}`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        const data = await res.json();
-        if (data.success) setRows(data.leaderboard);
-      } catch {}
-    };
-    run();
-  }, [roomId, token]);
-  return (
-    <div className="mt-6 max-w-md mx-auto text-left">
-      <IonCard>
-        <IonCardHeader>
-          <IonCardTitle>Leaderboard (Points)</IonCardTitle>
-        </IonCardHeader>
-        <IonCardContent>
-          <IonList>
-            {rows.map((r, idx) => (
-              <IonItem key={r.user_id} color={user && r.user_id === user.id ? 'light' : undefined}>
-                <IonLabel>
-                  <div className="flex justify-between">
-                    <span>{idx + 1}. {r.username}</span>
-                    <span className="font-semibold">{r.score}</span>
-                  </div>
-                </IonLabel>
-              </IonItem>
-            ))}
-          </IonList>
-        </IonCardContent>
-      </IonCard>
-    </div>
-  );
-};
 
 const RoomLobby: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -113,7 +51,7 @@ const RoomLobby: React.FC = () => {
 
   useEffect(() => {
     if (!isPublic) {
-      const s = io('https://preprimary-chau-unmelodised.ngrok-free.dev');
+      const s = io('http://localhost:5000');
       setSocket(s);
       s.emit('join_room', id);
       s.emit('join_game', { roomId: id });
@@ -155,7 +93,7 @@ const RoomLobby: React.FC = () => {
 
   const fetchRoomDetails = async () => {
     try {
-      const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms/${id}/info`, {
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}/info`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -164,7 +102,7 @@ const RoomLobby: React.FC = () => {
         setTotalQuestions(data.total || 0);
         if (data.room.is_public) {
           try {
-            await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms/join/${id}`, {
+            await fetch(`http://localhost:5000/api/rooms/join/${id}`, {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({})
@@ -198,8 +136,8 @@ const RoomLobby: React.FC = () => {
   const loadNextPublicQuestion = async () => {
     try {
       const [qRes, aRes] = await Promise.all([
-        fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/questions/room/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/answers/my/${id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(`http://localhost:5000/api/questions/room/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`http://localhost:5000/api/answers/my/${id}`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
       const qData = await qRes.json();
       const aData = await aRes.json();
@@ -235,7 +173,7 @@ const RoomLobby: React.FC = () => {
 
   const fetchParticipants = async () => {
     try {
-      const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms/${id}/participants`, {
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}/participants`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -251,7 +189,7 @@ const RoomLobby: React.FC = () => {
 
   const handleLeave = async () => {
     try {
-      await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/rooms/leave/${id}`, {
+      await fetch(`http://localhost:5000/api/rooms/leave/${id}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -264,17 +202,12 @@ const RoomLobby: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start"><IonButton onClick={() => setShowAlert(true)}>Leave</IonButton></IonButtons>
-          <IonTitle>Room Lobby</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent className="ion-padding">
+      <div  style={{background: '#000', color: '#fff', height: '100vh'}} className="ion-padding">
+          <IonButtons slot="start"><IonButton onClick={() => setShowAlert(true)} style={{color: 'red', fontWeight: 700, fontSize:18}}>Leave</IonButton></IonButtons>
         {isFinished ? (
           <div className="text-center">
             <h2 className="text-2xl font-bold">Quiz Finished</h2>
-            <Leaderboard roomId={id} token={token} />
+      <LeaderboardPanel roomId={id} token={token} currentUserId={user?.id} />
           </div>
         ) : !question ? (
           <>
@@ -290,13 +223,13 @@ const RoomLobby: React.FC = () => {
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow p-4">
+            <div className="bg-white rounded-lg shadow p-4" style={{background: '#000'}}>
               <h3 className="text-lg font-semibold mb-2">Participants ({participants.length})</h3>
               {loading ? (
                  <div className="text-center"><IonSpinner /></div>
               ) : (
                 <div className="h-64 overflow-y-auto border rounded">
-                  <IonList>
+                  <IonList style={{background: '#000'}}>
                     {participants.map(p => (
                       <IonItem key={p.id}>
                         <IonLabel>
@@ -311,25 +244,25 @@ const RoomLobby: React.FC = () => {
             </div>
           </>
         ) : (
-          <div className="max-w-md mx-auto mt-4">
+          <div style={{background: '#000'}} className="max-w-md mx-auto mt-4">
             <div className="text-center mb-4">
               <span className="text-2xl font-bold text-blue-600">{timeLeft}s</span>
             </div>
-            <IonCard>
+            <IonCard style={{background: '#000'}}>
               <IonCardHeader>
                 {(question as any).image_url || (question as any).imageUrl ? (
                   <img
                     src={(() => {
                       const raw = (question as any).image_url || (question as any).imageUrl;
-                      return typeof raw === 'string' && raw.startsWith('/uploads') ? `https://preprimary-chau-unmelodised.ngrok-free.dev${raw}` : raw;
+                      return typeof raw === 'string' && raw.startsWith('/uploads') ? `http://localhost:5000${raw}` : raw;
                     })()}
                     alt="Question"
                     className="mb-3 max-h-60 object-contain border rounded"
                   />
                 ) : null}
-                <IonCardTitle>{question.question_text || (question as any).questionText}</IonCardTitle>
+                <IonCardTitle style={{background: '#000', color: '#fff'}}>{question.question_text || (question as any).questionText}</IonCardTitle>
               </IonCardHeader>
-              <IonCardContent className="space-y-2">
+              <IonCardContent style={{background: '#000'}} className="space-y-2">
                 {(() => {
                   const opts: string[] = Array.isArray((question as any).options)
                     ? ((question as any).options as string[])
@@ -351,6 +284,7 @@ const RoomLobby: React.FC = () => {
                       <IonButton
                         key={i}
                         expand="block"
+                        style={{fontWeight: 800}}
                         color={color as any}
                         fill={fill as any}
                         disabled={selectedOptionIndex !== null}
@@ -360,7 +294,7 @@ const RoomLobby: React.FC = () => {
                           localStorage.setItem(`quiz_progress_${id}_${currentIndex}`, String(i));
                           (async () => {
                             try {
-                              const res = await fetch(`https://preprimary-chau-unmelodised.ngrok-free.dev/api/answers/submit`, {
+                              const res = await fetch(`http://localhost:5000/api/answers/submit`, {
                                 method: 'POST',
                                 headers: {
                                   'Content-Type': 'application/json',
@@ -420,7 +354,7 @@ const RoomLobby: React.FC = () => {
           message={submitError || ''} 
           duration={2000} 
         />
-      </IonContent>
+      </div>
     </IonPage>
   );
 };

@@ -20,7 +20,7 @@ const GlobalLeaderboard: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const s = io('https://preprimary-chau-unmelodised.ngrok-free.dev');
+    const s = io('http://localhost:5000');
     setSocket(s);
     s.emit('subscribe_global_leaderboard');
     s.on('global_leaderboard_snapshot', (payload: Row[]) => {
@@ -30,7 +30,7 @@ const GlobalLeaderboard: React.FC = () => {
     // initial fetch
     (async () => {
       try {
-        const res = await fetch('https://preprimary-chau-unmelodised.ngrok-free.dev/api/answers/leaderboard-global', {
+        const res = await fetch('http://localhost:5000/api/answers/leaderboard-global', {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         const data = await res.json();
@@ -41,29 +41,36 @@ const GlobalLeaderboard: React.FC = () => {
     return () => { s.disconnect(); };
   }, [token]);
 
+  const styles = {
+    page: { backgroundColor: '#000' },
+    toolbar: { backgroundColor: '#000', color: '#fff' },
+    title: { color: '#fff', border: "1px solid #000", textAlign: 'center', padding: 10 },
+    content: { backgroundColor: '#000', color: '#fff' },
+    card: { backgroundColor: '#121212', color: '#fff', border: '1px solid #333' },
+    row: { display: 'flex', justifyContent: 'space-between' },
+    left: { color: '#fff' },
+    right: { color: '#fff', fontWeight: 600 },
+  };
+
   return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Global Leaderboard</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent className="ion-padding">
+    <IonPage style={styles.page}>
+      <div style={styles.content}>
+        <IonTitle style={styles.title}>Global Leaderboard</IonTitle>
         {loading ? (
-          <div className="flex justify-center mt-10"><IonSpinner /></div>
+          <div style={{ textAlign: 'center', marginTop: 24 }}><IonSpinner /></div>
         ) : (
-          <IonCard>
+          <IonCard style={styles.card}>
             <IonCardHeader>
-              <IonCardTitle>Top Scores Across All Rooms</IonCardTitle>
+              <IonCardTitle style={{color: 'white', textAlign: 'center'}}>Top Scores Across All Rooms</IonCardTitle>
             </IonCardHeader>
-            <IonCardContent>
-              <IonList>
+            <div style={{background: '#000'}}>
+              <IonList style={{background: '#000'}}>
                 {rows.map((r) => (
-                  <IonItem key={r.userId} color={user && r.userId === user.id ? 'light' : undefined}>
+                  <div style={{background: (user && r.userId === (user as any).id) ? '#2f2f2f' : '#000', padding: 8, borderRadius: 8}} key={r.userId} >
                     <IonLabel>
-                      <div className="flex justify-between">
-                        <span>{r.position}. {r.username}</span>
-                        <span className="font-semibold">{r.score}</span>
+                      <div style={styles.row as React.CSSProperties}>
+                        <span style={{ ...styles.left, fontWeight: (user && r.userId === (user as any).id) ? 700 : 400 }}>{(r.position === 1 ? '🥇' : r.position === 2 ? '🥈' : r.position === 3 ? '🥉' : `${r.position}.`)} {r.username}</span>
+                        <span style={{ ...styles.right, color: (user && r.userId === (user as any).id) ? '#D1D5DB' : '#fff' }}>{r.score}</span>
                       </div>
                       {/* <div className="text-xs text-gray-500 mt-1">
                         <IonBadge color="tertiary" className="mr-2">Correct: {r.correct}</IonBadge>
@@ -71,13 +78,13 @@ const GlobalLeaderboard: React.FC = () => {
                         <IonBadge color="success">Rooms: {r.rooms}</IonBadge>
                       </div> */}
                     </IonLabel>
-                  </IonItem>
+                  </div>
                 ))}
               </IonList>
-            </IonCardContent>
+            </div>
           </IonCard>
         )}
-      </IonContent>
+      </div>
     </IonPage>
   );
 };
