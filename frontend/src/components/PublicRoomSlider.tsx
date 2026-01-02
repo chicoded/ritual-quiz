@@ -48,7 +48,7 @@ const PublicRoomSlider: React.FC<Props> = ({ rooms, isAuthenticated, onJoin, par
     };
   }, [rooms]);
 
-  const API_ORIGIN = 'http://localhost:5000';
+  const API_ORIGIN = 'https://ritualgames.com.ng';
   const styles = {
     rail: { display: 'flex', gap: 8, marginTop: 0, overflowX: 'auto' as const, paddingBottom: 0, paddingLeft: 8, paddingRight: 8, scrollSnapType: 'x mandatory' as any },
     cardWrap: { margin: 0, minWidth: '80%', height: 300, borderRadius: 30, scrollSnapAlign: 'center', transition: 'transform 300ms ease-out, opacity 300ms ease-out', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', display: 'flex' },
@@ -77,7 +77,7 @@ const PublicRoomSlider: React.FC<Props> = ({ rooms, isAuthenticated, onJoin, par
               opacity: idx === activeIndex ? 1 : 0.7,
               backgroundImage: (() => {
                 const raw = (r.cover_photo_url || '').replace(/\\/g, '/');
-                console.log(r.cover_photo_url)
+                // console.log(r.cover_photo_url)
                 if (!raw) return `url(${ritualLogo})`;
                 if (raw.startsWith('/uploads')) return `url(${API_ORIGIN}${raw})`;
                 if (raw.startsWith('uploads/')) return `url(${API_ORIGIN}/${raw})`;

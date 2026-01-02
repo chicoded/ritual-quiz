@@ -32,7 +32,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onDidDismiss }) => {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('https://ritualgames.com.ng/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -86,7 +86,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onDidDismiss }) => {
               const w = 500, h = 600;
               const y = window.top ? (window.top.outerHeight - h) / 2 : 100;
               const x = window.top ? (window.top.outerWidth - w) / 2 : 100;
-              window.open('http://localhost:5000/api/auth/discord', 'discord_oauth', `width=${w},height=${h},top=${y},left=${x}`);
+              window.open('https://ritualgames.com.ng/api/auth/discord', 'discord_oauth', `width=${w},height=${h},top=${y},left=${x}`);
             }}
           >
             Login with Discord

@@ -75,7 +75,7 @@ const JoinQuiz: React.FC = () => {
 
   useEffect(() => {
     fetchRooms();
-    const s = io('http://localhost:5000');
+    const s = io('https://ritualgames.com.ng');
     setSocket(s);
     s.emit('subscribe_rooms');
     s.on('rooms_snapshot', (snapshot: any[]) => {
@@ -127,7 +127,7 @@ const JoinQuiz: React.FC = () => {
   const fetchRooms = async () => {
     try {
       // Fetch public rooms
-      const res = await fetch('http://localhost:5000/api/rooms', {
+      const res = await fetch('https://ritualgames.com.ng/api/rooms', {
         headers: { 'Authorization': `Bearer ${token}` } // Optional if public endpoint doesn't need token, but good practice
       });
       const data = await res.json();
@@ -148,7 +148,7 @@ const JoinQuiz: React.FC = () => {
   const fetchMyStatus = async (roomIds: number[]) => {
     try {
       if (!roomIds || roomIds.length === 0) return;
-      const res = await fetch(`http://localhost:5000/api/answers/my-status`, {
+      const res = await fetch(`https://ritualgames.com.ng/api/answers/my-status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ roomIds })
@@ -175,7 +175,7 @@ const JoinQuiz: React.FC = () => {
       // Direct join logic (navigate to lobby)
       setJoining(true);
       try {
-        const res = await fetch(`http://localhost:5000/api/rooms/join/${room.id}`, {
+        const res = await fetch(`https://ritualgames.com.ng/api/rooms/join/${room.id}`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -213,7 +213,7 @@ const JoinQuiz: React.FC = () => {
     
     setJoining(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/rooms/join/${selectedRoom.id}`, {
+      const res = await fetch(`https://ritualgames.com.ng/api/rooms/join/${selectedRoom.id}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

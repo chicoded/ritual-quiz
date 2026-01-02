@@ -43,7 +43,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/rooms', { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+        const res = await fetch('https://ritualgames.com.ng/api/rooms', { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
         const data = await res.json();
         if (data.success) setRecent(data.rooms || []);
       } catch {}
@@ -51,7 +51,7 @@ const Home: React.FC = () => {
   }, [token]);
 
   useEffect(() => {
-    const s = io('http://localhost:5000');
+    const s = io('https://ritualgames.com.ng');
     setSocket(s);
     s.emit('subscribe_rooms');
     s.on('rooms_snapshot', (snapshot: any[]) => {
@@ -82,7 +82,7 @@ const Home: React.FC = () => {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('https://ritualgames.com.ng/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -134,7 +134,7 @@ const Home: React.FC = () => {
 
   const [myScore, setMyScore] = useState<{ total: number; correct: number; answered: number }>({ total: 0, correct: 0, answered: 0 });
   const [recentPlayed, setRecentPlayed] = useState<Array<{ id: number; title: string; room_code?: string; last_played: string; answered: number; total_score: number }>>([]);
-  const API_ORIGIN = 'http://localhost:5000';
+  const API_ORIGIN = 'https://ritualgames.com.ng';
   const resolveAvatar = (avatar?: string) => {
     if (!avatar) return Ritual;
     if (avatar.startsWith('http')) return avatar;
@@ -151,7 +151,7 @@ const Home: React.FC = () => {
 
       const fetchMyScore = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/users/me/score', {
+      const res = await fetch('https://ritualgames.com.ng/api/users/me/score', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -163,7 +163,7 @@ const Home: React.FC = () => {
 
   const fetchRecentPlayed = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/users/me/recent-played', {
+      const res = await fetch('https://ritualgames.com.ng/api/users/me/recent-played', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();

@@ -2,14 +2,17 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-const uploadRoot = path.resolve(process.cwd(), 'uploads');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadRoot = path.resolve(__dirname, '../uploads');
 const questionDir = path.join(uploadRoot, 'questions');
 const avatarDir = path.join(uploadRoot, 'avatars');
-const coverDir = path.join(uploadRoot, 'room_cover');
+const coverDir = path.join(uploadRoot, 'rooms_cover');
 try { if (!fs.existsSync(uploadRoot)) fs.mkdirSync(uploadRoot, { recursive: true }); } catch {}
 try { if (!fs.existsSync(questionDir)) fs.mkdirSync(questionDir, { recursive: true }); } catch {}
 try { if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true }); } catch {}
