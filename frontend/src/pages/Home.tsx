@@ -15,6 +15,7 @@ const Home: React.FC = () => {
   const { user, logout, token, login } = useAuth();
   const history = useHistory();
   const [recent, setRecent] = useState<Array<{ id: number; title: string; participant_count: number; published_at?: string; cover_photo_url?: string }>>([]);
+  const [recentLoading, setRecentLoading] = useState(true);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [email, setEmail] = useState('');
@@ -43,15 +44,16 @@ const Home: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('https://ritualgames.com.ng/api/rooms', { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+        const res = await fetch('http://localhost:5000/api/rooms', { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
         const data = await res.json();
         if (data.success) setRecent(data.rooms || []);
       } catch {}
+      finally { setRecentLoading(false); }
     })();
   }, [token]);
 
   useEffect(() => {
-    const s = io('https://ritualgames.com.ng');
+    const s = io('http://localhost:5000');
     setSocket(s);
     s.emit('subscribe_rooms');
     s.on('rooms_snapshot', (snapshot: any[]) => {
@@ -82,7 +84,7 @@ const Home: React.FC = () => {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://ritualgames.com.ng/api/auth/login', {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -134,7 +136,8 @@ const Home: React.FC = () => {
 
   const [myScore, setMyScore] = useState<{ total: number; correct: number; answered: number }>({ total: 0, correct: 0, answered: 0 });
   const [recentPlayed, setRecentPlayed] = useState<Array<{ id: number; title: string; room_code?: string; last_played: string; answered: number; total_score: number }>>([]);
-  const API_ORIGIN = 'https://ritualgames.com.ng';
+  const [recentPlayedLoading, setRecentPlayedLoading] = useState(true);
+  const API_ORIGIN = 'http://localhost:5000';
   const resolveAvatar = (avatar?: string) => {
     if (!avatar) return Ritual;
     if (avatar.startsWith('http')) return avatar;
@@ -151,7 +154,7 @@ const Home: React.FC = () => {
 
       const fetchMyScore = async () => {
     try {
-      const res = await fetch('https://ritualgames.com.ng/api/users/me/score', {
+      const res = await fetch('http://localhost:5000/api/users/me/score', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -163,12 +166,13 @@ const Home: React.FC = () => {
 
   const fetchRecentPlayed = async () => {
     try {
-      const res = await fetch('https://ritualgames.com.ng/api/users/me/recent-played', {
+      const res = await fetch('http://localhost:5000/api/users/me/recent-played', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.success) setRecentPlayed(data.recent || []);
     } catch (e) {}
+    finally { setRecentPlayedLoading(false); }
   };
 
 
@@ -179,7 +183,7 @@ const Home: React.FC = () => {
         {/* <IonToolbar style={{"--backgroundColor": "red"}} mode='ios'> */}
           {user && (
             <IonButtons slot="start">
-              <IonAvatar style={styles.avatar}>
+              <IonAvatar style={{ ...styles.avatar, cursor: 'pointer' }} onClick={() => history.push('/profile')}>
                 <img
                   src={resolveAvatar(user?.avatar_url)}
                   alt="avatar"
@@ -206,12 +210,18 @@ const Home: React.FC = () => {
       </div>
       <div style={{...styles.container, border: "0px solid white"}}>
               <div style={{fontSize: 28, margin: "auto", border: "0px solid white", fontWeight: 600, textAlign: "left", width: "95%", marginBottom: 8,}}>Popular Games</div>
-          <PublicRoomSlider rooms={recent} isAuthenticated={!!user} onJoin={onJoinRoom} participatedIds={recentPlayed.map(r => r.id)} />
+          {recentLoading ? (
+            <div style={{ textAlign: 'center', marginTop: 12 }}><span>Loading rooms...</span></div>
+          ) : (
+            <PublicRoomSlider rooms={recent} isAuthenticated={!!user} onJoin={onJoinRoom} participatedIds={recentPlayed.map(r => r.id)} />
+          )}
       </div>
       <div>
         <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginLeft: 16, marginBottom: 8 }}>Recent Played</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 16, paddingRight: 16 }}>
-          {recentPlayed.map((r) => (
+          {recentPlayedLoading ? (
+            <div style={{ textAlign: 'center', marginTop: 12 }}><span>Loading recent played...</span></div>
+          ) : recentPlayed.map((r) => (
             <div key={r.id} style={{ ...styles.playCard, width: '100%' }}>
               <div>
                 <div style={styles.cardTitle}>{r.title}</div>
@@ -224,7 +234,7 @@ const Home: React.FC = () => {
               </div>
             </div>
           ))}
-          {recentPlayed.length === 0 && (
+          {!recentPlayedLoading && recentPlayed.length === 0 && (
             <div style={styles.noItems}>No recent games</div>
           )}
         </div>

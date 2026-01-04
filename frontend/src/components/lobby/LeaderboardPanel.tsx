@@ -6,7 +6,7 @@ const LeaderboardPanel = ({ roomId, token, currentUserId }: { roomId: string; to
   useEffect(() => {
     const run = async () => {
       try {
-        const res = await fetch(`https://ritualgames.com.ng/api/answers/leaderboard/${roomId}`, {
+        const res = await fetch(`http://localhost:5000/api/answers/leaderboard/${roomId}`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         const data = await res.json();

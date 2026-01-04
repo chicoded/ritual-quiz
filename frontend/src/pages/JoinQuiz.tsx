@@ -75,7 +75,7 @@ const JoinQuiz: React.FC = () => {
 
   useEffect(() => {
     fetchRooms();
-    const s = io('https://ritualgames.com.ng');
+    const s = io('http://localhost:5000');
     setSocket(s);
     s.emit('subscribe_rooms');
     s.on('rooms_snapshot', (snapshot: any[]) => {
@@ -127,7 +127,7 @@ const JoinQuiz: React.FC = () => {
   const fetchRooms = async () => {
     try {
       // Fetch public rooms
-      const res = await fetch('https://ritualgames.com.ng/api/rooms', {
+      const res = await fetch('http://localhost:5000/api/rooms', {
         headers: { 'Authorization': `Bearer ${token}` } // Optional if public endpoint doesn't need token, but good practice
       });
       const data = await res.json();
@@ -148,7 +148,7 @@ const JoinQuiz: React.FC = () => {
   const fetchMyStatus = async (roomIds: number[]) => {
     try {
       if (!roomIds || roomIds.length === 0) return;
-      const res = await fetch(`https://ritualgames.com.ng/api/answers/my-status`, {
+      const res = await fetch(`http://localhost:5000/api/answers/my-status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ roomIds })
@@ -175,7 +175,7 @@ const JoinQuiz: React.FC = () => {
       // Direct join logic (navigate to lobby)
       setJoining(true);
       try {
-        const res = await fetch(`https://ritualgames.com.ng/api/rooms/join/${room.id}`, {
+        const res = await fetch(`http://localhost:5000/api/rooms/join/${room.id}`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -213,7 +213,7 @@ const JoinQuiz: React.FC = () => {
     
     setJoining(true);
     try {
-      const res = await fetch(`https://ritualgames.com.ng/api/rooms/join/${selectedRoom.id}`, {
+      const res = await fetch(`http://localhost:5000/api/rooms/join/${selectedRoom.id}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -300,16 +300,16 @@ const JoinQuiz: React.FC = () => {
                 onIonChange={(e: any) => setSegment((e.detail?.value as any) || 'public')}
                 style={{
                   ['--background' as any]: 'rgba(255,255,255,0.06)',
-                  ['--indicator-color' as any]: '#fff',
+                  ['--indicator-color' as any]: '#22c55e',
                   ['--border-radius' as any]: '20px',
-                  ['--color' as any]: '#fff',
-                  ['--color-checked' as any]: '#22c55e'
+                  ['--color' as any]: '#000',
+                  ['--color-checked' as any]: '#000'
                 } as React.CSSProperties}
               >
-                <IonSegmentButton value="public">
+                <IonSegmentButton style={{color: segment === 'public' ? '#000' : '#fff'}} value="public">
                   Public
                 </IonSegmentButton>
-                <IonSegmentButton value="private">
+                <IonSegmentButton style={{color: segment === 'private' ? '#000' : '#fff'}} value="private">
                   Private
                 </IonSegmentButton>
               </IonSegment>

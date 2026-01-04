@@ -11,6 +11,7 @@ import JoinQuiz from '@/pages/JoinQuiz';
 import RoomLobby from '@/pages/RoomLobby';
 import QuizGame from '@/pages/QuizGame';
 import GlobalLeaderboard from '@/pages/GlobalLeaderboard';
+import Profile from '@/pages/Profile';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import FloatingNav from '@/components/FloatingNav';
 import { useLocation } from 'react-router-dom';
@@ -42,7 +43,7 @@ const PrivateRoute: React.FC<{ path: string; component: React.FC; exact?: boolea
     <Route
       path={path}
       exact={exact}
-      render={(props) => (isAuthenticated ? <Component /> : <Redirect to="/login" />)}
+      render={(props) => (isAuthenticated ? <Component /> : <Redirect to="/" />)}
     />
   );
 };
@@ -60,6 +61,7 @@ const AppRoutes: React.FC = () => {
       <PrivateRoute exact path="/lobby/:id" component={RoomLobby} />
       <PrivateRoute exact path="/game/:id" component={QuizGame} />
       <PrivateRoute exact path="/leaderboard/global" component={GlobalLeaderboard} />
+      <PrivateRoute exact path="/profile" component={Profile} />
       <Route exact path="/">
         <Redirect to="/home" />
       </Route>

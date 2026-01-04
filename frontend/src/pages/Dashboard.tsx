@@ -44,7 +44,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     fetchMyRooms();
     fetchMyScore();
-    const s = io('https://ritualgames.com.ng');
+    const s = io('http://localhost:5000');
     setSocket(s);
     s.emit('subscribe_rooms');
     s.on('rooms_snapshot', (snapshot: any[]) => {
@@ -70,7 +70,7 @@ const Dashboard: React.FC = () => {
 
   const fetchMyRooms = async () => {
     try {
-      const response = await fetch('https://ritualgames.com.ng/api/rooms/my-rooms', {
+      const response = await fetch('http://localhost:5000/api/rooms/my-rooms', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -86,7 +86,7 @@ const Dashboard: React.FC = () => {
 
   const fetchMyScore = async () => {
     try {
-      const res = await fetch('https://ritualgames.com.ng/api/users/me/score', {
+      const res = await fetch('http://localhost:5000/api/users/me/score', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();

@@ -26,7 +26,7 @@ const LeaderboardCarousel: React.FC<LeaderboardProps> = ({ overlay = true, posit
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const s = io('https://ritualgames.com.ng');
+    const s = io('http://localhost:5000');
     setSocket(s);
     s.emit('subscribe_global_leaderboard');
     s.on('global_leaderboard_snapshot', (payload: Player[]) => {
@@ -82,7 +82,7 @@ const LeaderboardCarousel: React.FC<LeaderboardProps> = ({ overlay = true, posit
     return () => clearInterval(id);
   }, [players]);
 
-  const API_ORIGIN = 'https://ritualgames.com.ng';
+  const API_ORIGIN = 'http://localhost:5000';
   const containerBase = overlay
     ? ({ position: 'fixed' as const, bottom: 110, right: 16, zIndex: 900 })
     : ({ position: 'static' as const });

@@ -51,7 +51,7 @@ const RoomLobby: React.FC = () => {
 
   useEffect(() => {
     if (!isPublic) {
-      const s = io('https://ritualgames.com.ng');
+      const s = io('http://localhost:5000');
       setSocket(s);
       s.emit('join_room', id);
       s.emit('join_game', { roomId: id });
@@ -93,7 +93,7 @@ const RoomLobby: React.FC = () => {
 
   const fetchRoomDetails = async () => {
     try {
-      const res = await fetch(`https://ritualgames.com.ng/api/rooms/${id}/info`, {
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}/info`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -102,7 +102,7 @@ const RoomLobby: React.FC = () => {
         setTotalQuestions(data.total || 0);
         if (data.room.is_public) {
           try {
-            await fetch(`https://ritualgames.com.ng/api/rooms/join/${id}`, {
+            await fetch(`http://localhost:5000/api/rooms/join/${id}`, {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({})
@@ -136,8 +136,8 @@ const RoomLobby: React.FC = () => {
   const loadNextPublicQuestion = async () => {
     try {
       const [qRes, aRes] = await Promise.all([
-        fetch(`https://ritualgames.com.ng/api/questions/room/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`https://ritualgames.com.ng/api/answers/my/${id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(`http://localhost:5000/api/questions/room/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`http://localhost:5000/api/answers/my/${id}`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
       const qData = await qRes.json();
       const aData = await aRes.json();
@@ -173,7 +173,7 @@ const RoomLobby: React.FC = () => {
 
   const fetchParticipants = async () => {
     try {
-      const res = await fetch(`https://ritualgames.com.ng/api/rooms/${id}/participants`, {
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}/participants`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -189,7 +189,7 @@ const RoomLobby: React.FC = () => {
 
   const handleLeave = async () => {
     try {
-      await fetch(`https://ritualgames.com.ng/api/rooms/leave/${id}`, {
+      await fetch(`http://localhost:5000/api/rooms/leave/${id}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -254,7 +254,7 @@ const RoomLobby: React.FC = () => {
                   <img
                     src={(() => {
                       const raw = (question as any).image_url || (question as any).imageUrl;
-                      return typeof raw === 'string' && raw.startsWith('/uploads') ? `https://ritualgames.com.ng${raw}` : raw;
+                      return typeof raw === 'string' && raw.startsWith('/uploads') ? `http://localhost:5000${raw}` : raw;
                     })()}
                     alt="Question"
                     className="mb-3 max-h-60 object-contain border rounded"
@@ -294,7 +294,7 @@ const RoomLobby: React.FC = () => {
                           localStorage.setItem(`quiz_progress_${id}_${currentIndex}`, String(i));
                           (async () => {
                             try {
-                              const res = await fetch(`https://ritualgames.com.ng/api/answers/submit`, {
+                              const res = await fetch(`http://localhost:5000/api/answers/submit`, {
                                 method: 'POST',
                                 headers: {
                                   'Content-Type': 'application/json',

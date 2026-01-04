@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonInput, IonButton, IonItem, IonLabel, IonToast, IonLoading, IonSelect, IonSelectOption } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonInput, IonButton, IonItem, IonLabel, IonToast, IonLoading } from '@ionic/react';
 import { useAuth } from '../context/AuthContext';
 import { useHistory } from 'react-router-dom';
+import LoginModal from '@/components/LoginModal';
+import Ritual from '@/assets/imgs/ritualLogoBg.png';
 
 const Register: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -17,7 +19,7 @@ const Register: React.FC = () => {
   const handleRegister = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://ritualgames.com.ng/api/auth/register', {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password, role }),
@@ -41,33 +43,65 @@ const Register: React.FC = () => {
     }
   };
 
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const styles = {
+    modalWrap: { background: '#000', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    card: { width: '92%', maxWidth: 420, borderRadius: 16, border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'linear-gradient(135deg, rgba(25,25,25,0.9), rgba(35,35,35,0.8))', padding: 16 },
+    logoWrap: { width: 120, height: 120, borderRadius: '50%', margin: '0 auto 12px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' },
+    title: { textAlign: 'center' as const, fontSize: 20, fontWeight: 700, marginBottom: 8 },
+    subtitle: { textAlign: 'center' as const, fontSize: 13, color: '#9CA3AF', marginBottom: 14 },
+    item: { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 12, marginBottom: 10, padding: 12 },
+    inputVars: { ['--background' as any]: 'transparent', ['--color' as any]: '#fff', ['--placeholder-color' as any]: '#ffffffb3' } as React.CSSProperties,
+    actions: { marginTop: 12 },
+  };
+
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Register</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent className="ion-padding">
-        <IonItem>
-          <IonLabel position="stacked">Username</IonLabel>
-          <IonInput value={username} onIonChange={e => setUsername(e.detail.value!)} />
-        </IonItem>
-        <IonItem>
-          <IonLabel position="stacked">Email</IonLabel>
-          <IonInput value={email} onIonChange={e => setEmail(e.detail.value!)} type="email" />
-        </IonItem>
-        <IonItem>
-          <IonLabel position="stacked">Password</IonLabel>
-          <IonInput value={password} onIonChange={e => setPassword(e.detail.value!)} type="password" />
-        </IonItem>
-        <div className="ion-padding-top">
-          <IonButton expand="block" onClick={handleRegister}>Register</IonButton>
-          <IonButton expand="block" fill="clear" routerLink="/login">Already have an account? Login</IonButton>
+      <IonContent>
+        <div style={styles.modalWrap}>
+          <div style={styles.card}>
+            <div style={styles.logoWrap}>
+              <img src={Ritual} alt="Ritual" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <div style={styles.title}>Create your Ritual account</div>
+            <div style={styles.subtitle}>Join and start playing</div>
+            <div style={styles.item}>
+              <IonLabel position="stacked">Username</IonLabel>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                style={{ width: '100%', background: 'transparent', color: '#fff', padding: 8, border: 'none', outline: 'none' }}
+              />
+            </div>
+            <div style={styles.item}>
+              <IonLabel position="stacked">Email</IonLabel>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{ width: '100%', background: 'transparent', color: '#fff', padding: 8, border: 'none', outline: 'none' }}
+              />
+            </div>
+            <div style={styles.item}>
+              <IonLabel position="stacked">Password</IonLabel>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ width: '100%', background: 'transparent', color: '#fff', padding: 8, border: 'none', outline: 'none' }}
+              />
+            </div>
+            <div style={styles.actions}>
+              <button  style={{ width: '100%', padding: 12, borderRadius: 12, border: 'none', outline: 'none', background: '#000', color: '#fff', fontWeight: 700, boxShadow: "1px 5px 10px 2px rgba(255, 255, 255, 0.43)" }} onClick={handleRegister}>Register</button>
+              <button  style={{ width: '100%', marginTop: 12, padding: 12, borderRadius: 12, border: 'none', outline: 'none', background: 'transparent', color: '#fff', fontWeight: 700}} onClick={() => setLoginModalOpen(true)}>Already have an account? Login</button>
+            </div>
+            <IonLoading isOpen={loading} message={'Registering...'} />
+            <IonToast isOpen={showToast} onDidDismiss={() => setShowToast(false)} message={toastMessage} duration={2000} />
+          </div>
         </div>
-        <IonLoading isOpen={loading} message={'Registering...'} />
-        <IonToast isOpen={showToast} onDidDismiss={() => setShowToast(false)} message={toastMessage} duration={2000} />
       </IonContent>
+      <LoginModal isOpen={loginModalOpen} onDidDismiss={() => setLoginModalOpen(false)} />
     </IonPage>
   );
 };

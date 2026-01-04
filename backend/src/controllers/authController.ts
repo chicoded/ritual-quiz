@@ -184,23 +184,25 @@ export const discordCallback = async (req: Request, res: Response) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
     });
-    const tokenJson = await tokenRes.json();
+    type DiscordTokenResponse = { access_token?: string; token_type?: string; expires_in?: number; refresh_token?: string; scope?: string };
+    const tokenJson = (await tokenRes.json()) as DiscordTokenResponse;
     if (!tokenRes.ok) {
       res.status(400).send('Discord token exchange failed');
       return;
     }
-    const accessToken = tokenJson.access_token;
+    const accessToken = tokenJson.access_token || '';
     const userRes = await fetch('https://discord.com/api/users/@me', {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    const dUser = await userRes.json();
+    type DiscordUser = { id?: string | number; username?: string; email?: string | null; avatar?: string | null };
+    const dUser = (await userRes.json()) as DiscordUser;
     if (!userRes.ok) {
       res.status(400).send('Discord user fetch failed');
       return;
     }
 
-    const discordId = String(dUser.id);
-    const username = String(dUser.username);
+    const discordId = String(dUser.id ?? '');
+    const username = String(dUser.username ?? '');
     const email = dUser.email ? String(dUser.email) : '';
     const avatarUrl = dUser.avatar ? `https://cdn.discordapp.com/avatars/${discordId}/${dUser.avatar}.png` : null;
 

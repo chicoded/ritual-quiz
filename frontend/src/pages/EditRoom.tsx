@@ -55,7 +55,7 @@ const EditRoom: React.FC = () => {
 
   const fetchRoomDetails = async () => {
     try {
-      const res = await fetch(`https://ritualgames.com.ng/api/rooms/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -78,7 +78,7 @@ const EditRoom: React.FC = () => {
 
   const fetchQuestions = async () => {
     try {
-      const res = await fetch(`https://ritualgames.com.ng/api/questions/room/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/questions/room/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -96,7 +96,7 @@ const EditRoom: React.FC = () => {
       if (coverFile) {
         const fd = new FormData();
         fd.append('image', coverFile);
-        const up = await fetch(`https://ritualgames.com.ng/api/upload/room-cover`, {
+        const up = await fetch(`http://localhost:5000/api/upload/room-cover`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: fd,
@@ -104,7 +104,7 @@ const EditRoom: React.FC = () => {
         const upJson = await up.json();
         if (upJson?.success && upJson?.url) newCoverUrl = upJson.url;
       }
-      const res = await fetch(`https://ritualgames.com.ng/api/rooms/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ const EditRoom: React.FC = () => {
 
   const handleDeleteRoom = async () => {
     try {
-      const res = await fetch(`https://ritualgames.com.ng/api/rooms/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -158,7 +158,7 @@ const EditRoom: React.FC = () => {
       if (newImageFile) {
         const form = new FormData();
         form.append('image', newImageFile);
-        const upRes = await fetch(`https://ritualgames.com.ng/api/upload/question-image`, {
+        const upRes = await fetch(`http://localhost:5000/api/upload/question-image`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: form
@@ -169,7 +169,7 @@ const EditRoom: React.FC = () => {
         }
       }
 
-      const res = await fetch(`https://ritualgames.com.ng/api/questions/room/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/questions/room/${id}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -199,7 +199,7 @@ const EditRoom: React.FC = () => {
 
   const handleDeleteQuestion = async (qId: number) => {
     try {
-      const res = await fetch(`https://ritualgames.com.ng/api/questions/${qId}`, {
+      const res = await fetch(`http://localhost:5000/api/questions/${qId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -255,7 +255,7 @@ const EditRoom: React.FC = () => {
               {(coverPreview || coverUrl) && (
                 <div style={{ marginTop: 8 }}>
                   <img 
-                    src={coverPreview ? coverPreview : (coverUrl?.startsWith('/uploads') ? `https://ritualgames.com.ng${coverUrl}` : coverUrl || '')}
+                    src={coverPreview ? coverPreview : (coverUrl?.startsWith('/uploads') ? `http://localhost:5000${coverUrl}` : coverUrl || '')}
                     alt="cover"
                     style={{ maxWidth: '100%', borderRadius: 8 }}
                   />
@@ -320,7 +320,7 @@ const EditRoom: React.FC = () => {
                 color="success"
                 onClick={async () => {
                   try {
-                    const res = await fetch(`https://ritualgames.com.ng/api/rooms/publish/${id}`, {
+                    const res = await fetch(`http://localhost:5000/api/rooms/publish/${id}`, {
                       method: 'POST',
                       headers: { 
                         'Content-Type': 'application/json',
@@ -349,7 +349,7 @@ const EditRoom: React.FC = () => {
                         <img
                           src={(() => {
                             const raw = (q as any).image_url || (q as any).imageUrl;
-                            return typeof raw === 'string' && raw.startsWith('/uploads') ? `https://ritualgames.com.ng${raw}` : raw;
+                            return typeof raw === 'string' && raw.startsWith('/uploads') ? `http://localhost:5000${raw}` : raw;
                           })()}
                           alt="Question"
                           className="mb-3 max-h-48 object-contain border rounded"
